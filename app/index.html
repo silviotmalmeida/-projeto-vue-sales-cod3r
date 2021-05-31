@@ -47,7 +47,7 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td>+</td>
+                        <td></td>
                         <td>Total</td>
 
                         <!-- calculando o total de vendas -->
@@ -86,6 +86,18 @@
                         <td>{{ sale.date }}</td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td></td>
+                        <td>Total</td>
+
+                        <!-- calculando o total de vendas -->
+                        <!-- formatando o campo com tipo monetario -->
+                        <td v-money="'R$'">{{ calculateTotalPrice(sales) }}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -140,36 +152,69 @@
                         // atribuindo o conteudo ao atributo sales
                         .then(data => this.sales = data)
                 },
-                calculateTotal(sales) {
+                // metodo que calcula o valor total das vendas a partir da lista de vendas individual
+                calculateTotalPrice(sales) {
+                    // se o array passado for nulo, retorna 0,
                     if (!sales) return 0
+
+                    // senao utiliza a funcao reduce para retornar uma variavel totalizadora de preco*quantidade
+                    return sales.reduce((total, sale) => total + (sale.price * sale.qtde), 0)
+                },
+                // metodo que calcula o valor total das vendas a partir da lista de vendas agrupada por produto
+                calculateTotal(sales) {
+                    // se o array passado for nulo, retorna 0,
+                    if (!sales) return 0
+
+                    // senao utiliza a funcao reduce para retornar uma variavel totalizadora de valor
                     return sales.reduce((total, sale) => total + sale.value, 0)
                 }
             },
 
             // definindo os atributos calculados a serem disponibilizados ao elemento controlado
             computed: {
+                // metodo que agrupa a lista de vendas por produto
                 salesByProduct() {
+
+                    // se o array de vendas for nulo, retorna null,
                     if (!this.sales) return null
 
+                    // senao,inicia a geração de um novo array com os valores agrupados por produto
+                    // o totalizador grouped inicializaca como um objeto vazio e será populado como no exemplo data/grouped.json
                     const salesByProduct = this.sales.reduce((grouped, sale) => {
+
+                        // se dentro do totalizador group nao existir a propriedade sale.name:
                         if (!grouped.hasOwnProperty(sale.name)) {
+
+                            // cria uma propriedade com este valor e com atributos name e price
                             grouped[sale.name] = {
+
+                                // o name será o mesmo
                                 name: sale.name,
+
+                                // o value será o valor totalizado
                                 value: sale.price * sale.qtde
                             }
+
+                            // procede para a proxima iteracao do reduce
                             return grouped
                         }
 
+                        // se ja existir a propriedade, incrementa o value
                         grouped[sale.name].value += sale.price * sale.qtde
+
+                        // procede para a proxima iteracao do reduce
                         return grouped
                     }, {})
 
+                    // retorna somente os valores do array criado
                     return Object.values(salesByProduct)
                 }
             },
 
             // funcao que e executada automaticamente apos o carregamento da instancia vue
             mounted() {
+
+                // obtendo via ajax os dados de vendas existentes no arquivo data/sales.json
                 this.getSales()
             }
         })
